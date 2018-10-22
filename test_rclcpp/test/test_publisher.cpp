@@ -23,7 +23,7 @@
 #include "test_rclcpp/msg/u_int32.hpp"
 #include "test_rclcpp/utils.hpp"
 
-#include "./pub_sub_fixtures.hpp"
+#include "pub_sub_fixtures.hpp"
 
 #ifdef RMW_IMPLEMENTATION
 # define CLASSNAME_(NAME, SUFFIX) NAME ## __ ## SUFFIX
