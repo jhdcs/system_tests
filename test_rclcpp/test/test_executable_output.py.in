@@ -1,52 +1,50 @@
 # generated from test_rclcpp/test/test_executable_output.py.in
 # generated code does not contain a copyright notice
 
-from launch.legacy import LaunchDescriptor
-from launch.legacy.exit_handler import primary_exit_handler
-from launch.legacy.launcher import DefaultLauncher
-from launch.legacy.output_handler import ConsoleOutput
+import unittest
 
-from launch_testing import create_handler
-
-
-def @TEST_NAME@():
-    ld = LaunchDescriptor()
-
-    output_handlers = [ConsoleOutput()]
-
-    shutdown_trigger_handler = create_handler(
-        '@TEST_EXECUTABLE_NAME@',
-        ld,
-        '@TEST_EXECUTABLE_TRIGGER_SHUTDOWN_OUTPUT@',
-        exit_on_match=True,
-        filtered_rmw_implementation='@rmw_implementation@',
-    )
-    output_handlers.append(shutdown_trigger_handler)
-
-    output_check_handler = create_handler(
-        '@TEST_EXECUTABLE_NAME@',
-        ld,
-        '@TEST_EXECUTABLE_EXPECTED_OUTPUT@',
-        exit_on_match=False,
-        filtered_rmw_implementation='@rmw_implementation@',
-    )
-    output_handlers.append(output_check_handler)
-
-    ld.add_process(
-        cmd=['@TEST_EXECUTABLE@'],
-        name='@TEST_EXECUTABLE_NAME@',
-        exit_handler=primary_exit_handler,
-        output_handlers=output_handlers,
-    )
-
-    launcher = DefaultLauncher()
-    launcher.add_launch_descriptor(ld)
-    rc = launcher.launch()
-
-    assert rc == 0, "The launch file failed with exit code '" + str(rc) + "'. "
-
-    output_check_handler.check()
+from apex_rostest import post_shutdown_test
+from apex_rostest.asserts import assertInStdout
+from launch import LaunchDescription
+from launch.actions import ExecuteProcess
+from launch_testing.output import create_output_lines_filter
 
 
-if __name__ == '__main__':
-    @TEST_NAME@()
+def generate_test_description(ready_fn):
+    launch_description = LaunchDescription([
+        ExecuteProcess(
+            cmd=['@TEST_EXECUTABLE@'],
+            name='@TEST_EXECUTABLE_NAME@',
+            output='screen'
+        )
+    ])
+    ready_fn()
+    return launch_description
+
+
+class ShutdownTest(unittest.TestCase):
+
+    def test_for_shutdown_output(self):
+        trigger_shutdown_output = '@TEST_EXECUTABLE_TRIGGER_SHUTDOWN_OUTPUT@.txt'
+        with open(trigger_shutdown_output, 'r') as f:
+            self.proc_output.assertWaitFor(
+                msg=f.read(), node='@TEST_EXECUTABLE_NAME@',
+                timeout=10, filter_output=create_output_lines_filter(
+                    filtered_rmw_implementation='@rmw_implementation@'
+                )
+            )
+
+
+@post_shutdown_test()
+class PostShutdownTest(unittest.TestCase):
+
+    def test_full_output(self):
+        expected_output = '@TEST_EXECUTABLE_EXPECTED_OUTPUT@.txt'
+        with open(expected_output, 'r') as f:
+            assertInStdout(
+                self.proc_output, msg=f.read(),
+                node='@TEST_EXECUTABLE_NAME@',
+                filter_output=create_output_lines_filter(
+                    filtered_rmw_implementation='@rmw_implementation@'
+                )
+            )

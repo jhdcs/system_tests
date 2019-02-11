@@ -154,19 +154,7 @@ if(BUILD_TESTING)
       OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${test_name}${target_suffix}_$<CONFIG>.py"
       INPUT "${CMAKE_CURRENT_BINARY_DIR}/${test_name}${target_suffix}.py.configure"
     )
-    ament_add_pytest_test(${test_name}${target_suffix}
-      "${CMAKE_CURRENT_BINARY_DIR}/${test_name}${target_suffix}_$<CONFIG>.py"
-      ${ARGN}
-      APPEND_LIBRARY_DIRS "${append_library_dirs}"
-      ENV
-      RCL_ASSERT_RMW_ID_MATCHES=${rmw_implementation}
-      RMW_IMPLEMENTATION=${rmw_implementation}
-    )
-    if(TEST ${test_name}${target_suffix})
-      set_tests_properties(${test_name}${target_suffix}
-        PROPERTIES DEPENDS "${executable}${target_suffix}"
-      )
-    endif()
+    add_apex_rostest("${CMAKE_CURRENT_BINARY_DIR}/${test_name}${target_suffix}_$<CONFIG>.py")
   endmacro()
 
   macro(cross_rmw_tests)
